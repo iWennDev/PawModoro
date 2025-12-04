@@ -3,6 +3,7 @@ const COUNTDOWN_UPDATE_INTERVAL = 250; // in milliseconds
 let overlay;
 let countdown;
 let countdownInterval;
+let sleepingCountdownInterval;
 
 function pauseAllMedia() {
     const mediaElements = document.querySelectorAll("video, audio");
@@ -15,7 +16,7 @@ function pauseAllMedia() {
     });
 }
 
-function createCountdownTimer(durationSeconds, startTime) {
+function createCountdownTimer(durationSeconds, startTime, sleepEnd) {
 
     if (countdown) {
         return;
@@ -60,7 +61,7 @@ function createCountdownTimer(durationSeconds, startTime) {
         cursor: "pointer"
     });
     snoozeBtn.addEventListener("click", () => {
-        chrome.runtime.sendMessage({ action: "snoozePomodoroCycle" });
+        chrome.runtime.sendMessage({action: "snoozePomodoroCycle"});
 
         clearInterval(countdownInterval);
         countdown.remove();
@@ -77,14 +78,14 @@ function createCountdownTimer(durationSeconds, startTime) {
             clearInterval(countdownInterval);
             countdown.remove();
             countdown = null;
-            createOverlay();
+            createOverlay(sleepEnd);
         } else {
             timerText.textContent = remainingSeconds;
         }
     }, COUNTDOWN_UPDATE_INTERVAL);
 }
 
-function createOverlay() {
+function createOverlay(sleepEnd) {
     if (overlay) {
         return;
     }
@@ -110,25 +111,51 @@ function createOverlay() {
         pointerEvents: "auto",
         zIndex: "99999999", // High z-index to cover all content TODO: find highest possible in doc
         cursor: "auto",
-        backdropFilter: "blur(4px)"
+        backdropFilter: "blur(4px)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
     });
-    
+
+    const overlayCountdown = document.createElement("div");
+    overlayCountdown.id = "overlayCountdown";
+    Object.assign(overlayCountdown.style, {
+        color: "#fff",
+        fontSize: "48px",
+        textAlign: "center"
+    });
+    overlay.appendChild(overlayCountdown);
+
     document.body.appendChild(overlay);
 
     document.body.style.overflow = "hidden"; // no scrolling
+
+    sleepingCountdownInterval = setInterval(() => {
+        let remainingMs = sleepEnd - Date.now();
+        if (remainingMs <= 0) {
+            remainingMs = 0;
+            clearInterval(sleepingCountdownInterval);
+        } else {
+            let remainingSeconds = Math.ceil(remainingMs / 1000);
+            let minutes = Math.floor(remainingSeconds / 60);
+            let seconds = remainingSeconds % 60;
+            overlayCountdown.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }, COUNTDOWN_UPDATE_INTERVAL);
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.action) {
         case "pomodoroTimer":
-            let timerDuration = msg.timerDuration;
-            createCountdownTimer(timerDuration, msg.startTime);
+            createCountdownTimer(msg.timerDuration, msg.startTime, msg.sleepEnd);
             break;
         case "pomodoroSleep":
-            createOverlay();
+            createOverlay(msg.sleepEnd);
             break;
         case "pomodoroAwake":
             if (overlay) {
+                clearInterval(sleepingCountdownInterval);
                 overlay.remove();
                 overlay = null;
             }

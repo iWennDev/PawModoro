@@ -7,6 +7,7 @@ const COUNTDOWN_DURATION = 10; // in seconds
 const SNOOZE_DURATION = 1; // in minutes
 
 let isAwake = true;
+let sleepEnd = null;
 
 let isRunning = false;
 
@@ -120,10 +121,11 @@ chrome.alarms.onAlarm.addListener(
 
         console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
         isAwake = !isAwake;
-        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? AWAKE_DURATION-(COUNTDOWN_DURATION/60) : SLEEP_DURATION});
+        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? AWAKE_DURATION-(COUNTDOWN_DURATION/60) : SLEEP_DURATION+(COUNTDOWN_DURATION/60)});
 
         if (!isAwake) {
-            broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION});
+            sleepEnd = Date.now() + (SLEEP_DURATION+COUNTDOWN_DURATION/60) * 60 * 1000;
+            broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
         }
         else {
             broadcastToTabs({action: "pomodoroAwake"});
@@ -134,13 +136,13 @@ chrome.alarms.onAlarm.addListener(
 // Hides new tabs if in sleep mode
 chrome.tabs.onCreated.addListener((tab) => {
     if (!isAwake && isInjectable(tab)) {
-        messageTab(tab.id, { action: "pomodoroSleep" });
+        messageTab(tab.id, { action: "pomodoroSleep", sleepEnd: sleepEnd });
     }
 });
 
 // Hides reloaded or long to load tabs if in sleep mode
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!isAwake && changeInfo.status === "complete" && isInjectable(tab)) {
-        messageTab(tabId, { action: "pomodoroSleep" });
+        messageTab(tabId, { action: "pomodoroSleep", sleepEnd: sleepEnd });
     }
 });
