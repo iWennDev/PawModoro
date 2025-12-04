@@ -1,0 +1,10 @@
+{
+    "name": "PawModoro",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "description": "A Pomodoro timer extension as part of NEVERHACK's challenge for Nuit de l'Info 2025.",
+    "action": {
+        "default_popup": "pages/popup.html",
+        "default_icon": "icons/default_icon.png"
+    }
+}
