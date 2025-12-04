@@ -1,10 +1,22 @@
 let overlay;
 
-function createOverlay() {
+function pauseAllMedia() {
+    const mediaElements = document.querySelectorAll("video, audio");
+    mediaElements.forEach((element) => {
+        try {
+            element.pause();
+        } catch (e) {
+            console.warn("Failed to pause media element:", e);
+        }
+    });
+}
 
+function createOverlay() {
     if (overlay) {
         return;
     }
+
+    pauseAllMedia();
 
     overlay = document.createElement("div");
     overlay.id = "sleepOverlay";
