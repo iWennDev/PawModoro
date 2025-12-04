@@ -2,6 +2,10 @@
 const SLEEP_DURATION = 1; // in minutes, minimum 1 (0.5 for newer Chrome versions)
 const AWAKE_DURATION = 1; // in minutes, minimum 1 (0.5 for newer Chrome versions)
 
+const COUNTDOWN_DURATION = 10; // in seconds
+
+const SNOOZE_DURATION = 1; // in minutes
+
 let isAwake = true;
 
 let isRunning = false;
@@ -36,7 +40,7 @@ function injectScriptEverywhere(scriptPath) {
 
 function startCycle() {
     console.log(`Starting cycle with AWAKE...`);
-    chrome.alarms.create("pomodoroCycle", {delayInMinutes: AWAKE_DURATION});
+    chrome.alarms.create("pomodoroCycle", {delayInMinutes: AWAKE_DURATION-(COUNTDOWN_DURATION/60)});
 
     injectScriptEverywhere("scripts/sleep_overlay.js");
 
@@ -47,6 +51,14 @@ function stopCycle() {
     isAwake = true;
     chrome.alarms.clear("pomodoroCycle");
     console.log("Cycle stopped");
+    broadcastToTabs({action: "pomodoroAwake"});
+}
+
+function snoozeCycle() {
+    isAwake = true;
+    chrome.alarms.clear("pomodoroCycle");
+    console.log(`Snoozing for ${SNOOZE_DURATION} minute(s)`);
+    chrome.alarms.create("pomodoroCycle", {delayInMinutes: SNOOZE_DURATION});
     broadcastToTabs({action: "pomodoroAwake"});
 }
 
@@ -68,28 +80,36 @@ function broadcastToTabs(message) {
     });
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.action === "startPomodoroCycle") {
-        if (isRunning) {
-            console.log("Cycle already running");
-            return;
-        }
-        isRunning = true;
-        console.log("Cycle starting");
-        startCycle();
-    }
-});
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    switch (msg.action) {
+        case "startPomodoroCycle":
+            if (!isRunning) {
+                isRunning = true;
+                console.log("Cycle starting");
+                startCycle();
+            }
+            break;
 
-chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.action === "stopPomodoroCycle") {
-        if (!isRunning) {
-            console.log("Cycle is not running");
-            return;
-        }
-        isRunning = false;
-        console.log("Stopping cycle");
-        stopCycle();
+        case "stopPomodoroCycle":
+            if (isRunning) {
+                isRunning = false;
+                console.log("Stopping cycle");
+                stopCycle();
+            }
+            break;
+
+        case "snoozePomodoroCycle":
+            if (isRunning) {
+                console.log("Snooze pressed");
+                snoozeCycle();
+            }
+            break;
+
+        default:
+            console.warn("Unknown action:", msg.action);
     }
+
+    sendResponse({ success: true });
 });
 
 chrome.alarms.onAlarm.addListener(
@@ -100,8 +120,14 @@ chrome.alarms.onAlarm.addListener(
 
         console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
         isAwake = !isAwake;
-        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? AWAKE_DURATION : SLEEP_DURATION});
-        broadcastToTabs({action: isAwake ? "pomodoroAwake" : "pomodoroSleep"});
+        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? AWAKE_DURATION-(COUNTDOWN_DURATION/60) : SLEEP_DURATION});
+
+        if (!isAwake) {
+            broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION});
+        }
+        else {
+            broadcastToTabs({action: "pomodoroAwake"});
+        }
     }
 );
 
