@@ -137,7 +137,6 @@ function createOverlay(sleepEnd) {
         cursor: "pointer"
     });
 
-    console.log(overlay);
     overlay.appendChild(skipBtn);
 
     skipBtn.addEventListener("click", () => {

@@ -24,8 +24,13 @@ sleepSlider.addEventListener('input', () => {
     sleepValue.textContent = sleepSlider.value;
 });
 
-chrome.storage.local.get(["awakeDuration", "sleepDuration"], (data) => {
-    console.log(data);
+chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp"], (data) => {
+    if (data.xp) {
+        document.getElementById("xpValue").textContent = data.xp;
+    }
+    else {
+        document.getElementById("xpValue").textContent = "0";
+    }
     if (data.awakeDuration) {
         document.getElementById("awakeSlider").value = data.awakeDuration;
         document.getElementById("awakeValue").textContent = data.awakeDuration;
