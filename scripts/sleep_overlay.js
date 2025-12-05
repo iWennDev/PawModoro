@@ -31,16 +31,34 @@ function createCountdownTimer(durationSeconds, startTime, sleepEnd) {
         position: "fixed",
         top: "20px",
         right: "20px",
-        padding: "10px 15px",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        padding: "16px 20px",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         color: "#fff",
-        fontSize: "24px",
-        borderRadius: "8px",
+        fontSize: "18px",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        borderRadius: "16px",
         zIndex: "99999999",
-        pointerEvents: "auto"
+        pointerEvents: "auto",
+        boxShadow: "0 8px 32px rgba(102, 126, 234, 0.4)",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px"
+    });
+
+    const timerContainer = document.createElement("div");
+    Object.assign(timerContainer.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "8px"
     });
 
     const timerText = document.createElement("span");
+    Object.assign(timerText.style, {
+        fontSize: "28px",
+        fontWeight: "700",
+        minWidth: "40px",
+        textAlign: "center"
+    });
 
     let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
     let remainingSeconds = durationSeconds - elapsedSeconds;
@@ -49,17 +67,42 @@ function createCountdownTimer(durationSeconds, startTime, sleepEnd) {
     }
     timerText.textContent = remainingSeconds;
 
-    countdown.appendChild(timerText);
+    const label = document.createElement("span");
+    label.textContent = "Rest in";
+    Object.assign(label.style, {
+        fontSize: "14px",
+        opacity: "0.9",
+        marginRight: "4px"
+    });
+
+    timerContainer.appendChild(label);
+    timerContainer.appendChild(timerText);
+    countdown.appendChild(timerContainer);
 
     const snoozeBtn = document.createElement("button");
-    snoozeBtn.textContent = "Snooze";
+    snoozeBtn.textContent = "Snooze (-2 XP)";
     Object.assign(snoozeBtn.style, {
-        marginLeft: "10px",
-        padding: "5px 10px",
-        fontSize: "20px",
-        color: "#fff",
-        cursor: "pointer"
+        padding: "8px 16px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#764ba2",
+        backgroundColor: "#fff",
+        border: "none",
+        borderRadius: "10px",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
     });
+    
+    snoozeBtn.addEventListener("mouseenter", () => {
+        snoozeBtn.style.transform = "scale(1.05)";
+        snoozeBtn.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.2)";
+    });
+    snoozeBtn.addEventListener("mouseleave", () => {
+        snoozeBtn.style.transform = "scale(1)";
+        snoozeBtn.style.boxShadow = "none";
+    });
+    
     snoozeBtn.addEventListener("click", () => {
         chrome.runtime.sendMessage({action: "snoozePomodoroCycle"});
 
@@ -109,32 +152,106 @@ function createOverlay(sleepEnd) {
         height: "100%",
         backgroundColor: "rgba(0, 0, 0, 0.8)",
         pointerEvents: "auto",
-        zIndex: "99999999", // High z-index to cover all content TODO: find highest possible in doc
+        zIndex: "99999999", // High z-index to cover all content
         cursor: "auto",
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(8px)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        gap: "24px"
+    });
+
+    // Cat on pillow
+    const sleepIcon = document.createElement("img");
+    sleepIcon.src = chrome.runtime.getURL("media/cat_pillow.png");
+    sleepIcon.alt = "Sleeping cat";
+    Object.assign(sleepIcon.style, {
+        width: "250px",
+        height: "250px",
+        objectFit: "contain",
+        animation: "pulse 2s ease-in-out infinite"
+    });
+    overlay.appendChild(sleepIcon);
+
+    // Pulsing anim
+    const style = document.createElement("style");
+    style.textContent = `
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+    `;
+    overlay.appendChild(style);
+
+    const title = document.createElement("div");
+    title.textContent = "Time to Rest";
+    Object.assign(title.style, {
+        color: "#fff",
+        fontSize: "32px",
+        fontWeight: "700",
+        textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)"
+    });
+    overlay.appendChild(title);
+
+    // Countdown
+    const countdownContainer = document.createElement("div");
+    Object.assign(countdownContainer.style, {
+        background: "rgba(255, 255, 255, 0.15)",
+        borderRadius: "20px",
+        padding: "24px 48px",
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
     });
 
     const overlayCountdown = document.createElement("div");
     overlayCountdown.id = "overlayCountdown";
     Object.assign(overlayCountdown.style, {
         color: "#fff",
-        fontSize: "48px",
-        textAlign: "center"
+        fontSize: "72px",
+        fontWeight: "700",
+        textAlign: "center",
+        letterSpacing: "4px",
+        textShadow: "0 4px 20px rgba(0, 0, 0, 0.2)"
     });
-    overlay.appendChild(overlayCountdown);
+    countdownContainer.appendChild(overlayCountdown);
+    overlay.appendChild(countdownContainer);
 
+    const subtitle = document.createElement("div");
+    subtitle.textContent = "Take a break from your screen";
+    Object.assign(subtitle.style, {
+        color: "rgba(255, 255, 255, 0.8)",
+        fontSize: "16px",
+        marginTop: "8px"
+    });
+    overlay.appendChild(subtitle);
+
+    // Skip button
     const skipBtn = document.createElement("button");
-    skipBtn.textContent = "Skip Sleep";
+    skipBtn.textContent = "⏭️ Skip Rest (-10 XP)";
     Object.assign(skipBtn.style, {
-        marginLeft: "10px",
-        padding: "5px 10px",
-        fontSize: "20px",
-        color: "#fff",
-        cursor: "pointer"
+        marginTop: "16px",
+        padding: "14px 28px",
+        fontSize: "16px",
+        fontWeight: "600",
+        color: "#764ba2",
+        backgroundColor: "#fff",
+        border: "none",
+        borderRadius: "12px",
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    });
+
+    skipBtn.addEventListener("mouseenter", () => {
+        skipBtn.style.transform = "translateY(-2px) scale(1.02)";
+        skipBtn.style.boxShadow = "0 6px 24px rgba(0, 0, 0, 0.3)";
+    });
+    skipBtn.addEventListener("mouseleave", () => {
+        skipBtn.style.transform = "translateY(0) scale(1)";
+        skipBtn.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.2)";
     });
 
     overlay.appendChild(skipBtn);
@@ -142,7 +259,7 @@ function createOverlay(sleepEnd) {
     skipBtn.addEventListener("click", () => {
         chrome.runtime.sendMessage({action: "skipSleepPomodoroCycle"});
 
-        clearInterval(countdownInterval);
+        clearInterval(sleepingCountdownInterval);
         overlay.remove();
         overlay = null;
     });
@@ -165,6 +282,7 @@ function createOverlay(sleepEnd) {
     }, COUNTDOWN_UPDATE_INTERVAL);
 }
 
+// Messsages from background
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.action) {
         case "pomodoroTimer":

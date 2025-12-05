@@ -25,5 +25,11 @@
             "js": ["scripts/sleep_overlay.js"],
             "run_at": "document_end"
         }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["media/*", "cats/*"],
+            "matches": ["<all_urls>"]
+        }
     ]
 }
