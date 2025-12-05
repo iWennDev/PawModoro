@@ -114,7 +114,10 @@ function stopCycle() {
     chrome.alarms.clear("pomodoroCycle");
     console.log("Cycle stopped");
     chrome.storage.local.set({
-        isRunning: false
+        isRunning: false,
+        isAwake: true,
+        phaseStart: null,
+        phaseDuration: null
     });
     broadcastToTabs({action: "pomodoroAwake"});
 }
@@ -139,6 +142,11 @@ function skipSleep() {
     chrome.alarms.clear("pomodoroCycle");
     console.log(`Skipping sleep phase, starting AWAKE for ${awakeDuration} minute(s)`);
     chrome.alarms.create("pomodoroCycle", {delayInMinutes: awakeDuration-(COUNTDOWN_DURATION/60)});
+    chrome.storage.local.set({
+        isAwake: true,
+        phaseStart: Date.now(),
+        phaseDuration: awakeDuration - (COUNTDOWN_DURATION / 60)
+    });
     broadcastToTabs({action: "pomodoroAwake"});
     // Apply penalty for skipping sleep
     updateXp(-SKIP_PENALTY);
@@ -254,17 +262,26 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     }
 });
 
+function showSleepOverlayIfNeeded(tabId, tab) {
+    if (!isInjectable(tab)) return;
+    
+    chrome.storage.local.get(["isAwake", "isRunning", "sleepDuration"], (data) => {
+        if (data.isRunning && data.isAwake === false) {
+            const end = sleepEnd || Date.now() + ((data.sleepDuration || 5) + COUNTDOWN_DURATION/60) * 60 * 1000;
+            messageTab(tabId, { action: "pomodoroSleep", sleepEnd: end });
+        }
+    });
+}
+
 // Hides new tabs if in sleep mode
 chrome.tabs.onCreated.addListener((tab) => {
-    if (!isAwake && isInjectable(tab)) {
-        messageTab(tab.id, { action: "pomodoroSleep", sleepEnd: sleepEnd });
-    }
+    showSleepOverlayIfNeeded(tab.id, tab);
 });
 
 // Hides reloaded or long to load tabs if in sleep mode
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!isAwake && changeInfo.status === "complete" && isInjectable(tab)) {
-        messageTab(tabId, { action: "pomodoroSleep", sleepEnd: sleepEnd });
+    if (changeInfo.status === "complete") {
+        showSleepOverlayIfNeeded(tabId, tab);
     }
 });
 
