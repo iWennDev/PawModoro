@@ -19,6 +19,16 @@ const levels = [
     2000 // Black Belt
 ];
 
+const beltNames = [
+    "White Belt",
+    "Yellow Belt",
+    "Orange Belt",
+    "Green Belt",
+    "Blue Belt",
+    "Brown Belt",
+    "Black Belt"
+];
+
 let isAwake = true;
 let sleepEnd = null;
 
@@ -55,14 +65,30 @@ function injectScriptEverywhere(scriptPath) {
     });
 }
 
+function calculateBelt(xp) {
+    for (let i = levels.length - 1; i >= 0; i--) {
+        if (xp >= levels[i]) {
+            return beltNames[i];
+        }
+    }
+    return beltNames[0];
+}
+
 function updateXp(amount) {
-    chrome.storage.local.get(["xp"], (data) => {
+    chrome.storage.local.get(["xp", "belt"], (data) => {
         let currentXp = data.xp || 0;
         let newXp = Math.max(0, currentXp + amount);
 
         chrome.storage.local.set({ xp: newXp }, () => {
             console.log(`XP updated: ${currentXp} -> ${newXp}`);
         });
+
+        let newBelt = calculateBelt(newXp);
+        if (newBelt !== data.belt) {
+            chrome.storage.local.set({ belt: newBelt }, () => {
+                console.log(`Belt updated: ${data.belt} -> ${newBelt}`);
+            });
+        }
     });
 }
 
@@ -205,15 +231,21 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // Initialize XP on startup if missing
 chrome.runtime.onStartup.addListener(() => {
-    chrome.storage.local.get(["xp"], (data) => {
+    chrome.storage.local.get(["xp", "belt"], (data) => {
         if (data.xp === undefined) {
             chrome.storage.local.set({ xp: 0 }, () => {
                 console.log("XP initialized to 0");
             });
         }
+        if (data.belt === undefined) {
+            chrome.storage.local.set({ belt: "White Belt" }, () => {
+                console.log("Belt initialized to White Belt");
+            });
+        }
     });
 });
 
+//TODO remove duplication with onStartup listener
 // Initialize XP on fresh install if missing
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.get(["xp"], (data) => {
@@ -222,5 +254,11 @@ chrome.runtime.onInstalled.addListener(() => {
                 console.log("XP initialized to 0");
             });
         }
+
+        let currentXp = data.xp || 0;
+        let belt = calculateBelt(currentXp);
+        chrome.storage.local.set({ belt: belt }, () => {
+            console.log(`Belt initialized to ${belt}`);
+        });
     });
 });
