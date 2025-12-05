@@ -2,6 +2,23 @@ const COUNTDOWN_DURATION = 10; // in seconds
 
 const SNOOZE_DURATION = 1; // in minutes TODO put 5 minutes, for testing purposes set to 1
 
+// negative actions
+const SNOOZE_PENALTY = 2;
+const SKIP_PENALTY = 10;
+
+//positive actions
+const COMPLETE_BONUS = 10;
+
+const levels = [
+    0, // White Belt
+    30, // Yellow Belt
+    100, // Orange Belt
+    250, // Green Belt
+    500, // Blue Belt
+    1000, // Brown Belt
+    2000 // Black Belt
+];
+
 let isAwake = true;
 let sleepEnd = null;
 
@@ -38,6 +55,33 @@ function injectScriptEverywhere(scriptPath) {
     });
 }
 
+function calculateBelt(xp) {
+    for (let i = levels.length - 1; i >= 0; i--) {
+        if (xp >= levels[i]) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+function updateXp(amount) {
+    chrome.storage.local.get(["xp", "belt"], (data) => {
+        let currentXp = data.xp || 0;
+        let newXp = Math.max(0, currentXp + amount);
+
+        chrome.storage.local.set({ xp: newXp }, () => {
+            console.log(`XP updated: ${currentXp} -> ${newXp}`);
+        });
+
+        let newBelt = calculateBelt(newXp);
+        if (newBelt !== data.belt) {
+            chrome.storage.local.set({ belt: newBelt }, () => {
+                console.log(`Belt updated: ${data.belt} -> ${newBelt}`);
+            });
+        }
+    });
+}
+
 function startCycle(awakeTime, sleepTime) {
     awakeDuration = awakeTime;
     sleepDuration = sleepTime;
@@ -68,6 +112,8 @@ function snoozeCycle() {
     console.log(`Snoozing for ${SNOOZE_DURATION} minute(s)`);
     chrome.alarms.create("pomodoroCycle", {delayInMinutes: SNOOZE_DURATION});
     broadcastToTabs({action: "pomodoroAwake"});
+    // Apply penalty for snoozing
+    updateXp(-SNOOZE_PENALTY);
 }
 
 function skipSleep() {
@@ -76,6 +122,8 @@ function skipSleep() {
     console.log(`Skipping sleep phase, starting AWAKE for ${awakeDuration} minute(s)`);
     chrome.alarms.create("pomodoroCycle", {delayInMinutes: awakeDuration-(COUNTDOWN_DURATION/60)});
     broadcastToTabs({action: "pomodoroAwake"});
+    // Apply penalty for skipping sleep
+    updateXp(-SKIP_PENALTY);
 }
 
 function messageTab(tabId, message) {
@@ -139,20 +187,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.alarms.onAlarm.addListener(
     (alarm) => {
-        if (alarm.name !== "pomodoroCycle") {
-            return;
-        }
+        if (alarm.name === "pomodoroCycle") {
+            console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
+            isAwake = !isAwake;
+            chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? awakeDuration-(COUNTDOWN_DURATION/60) : sleepDuration+(COUNTDOWN_DURATION/60)});
 
-        console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
-        isAwake = !isAwake;
-        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? awakeDuration-(COUNTDOWN_DURATION/60) : sleepDuration+(COUNTDOWN_DURATION/60)});
-
-        if (!isAwake) {
-            sleepEnd = Date.now() + (sleepDuration+COUNTDOWN_DURATION/60) * 60 * 1000;
-            broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
-        }
-        else {
-            broadcastToTabs({action: "pomodoroAwake"});
+            if (!isAwake) {
+                sleepEnd = Date.now() + (sleepDuration+COUNTDOWN_DURATION/60) * 60 * 1000;
+                broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
+            }
+            else {
+                broadcastToTabs({action: "pomodoroAwake"});
+                // Award XP for completing a sleep cycle
+                updateXp(COMPLETE_BONUS);
+            }
         }
     }
 );
@@ -169,4 +217,38 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (!isAwake && changeInfo.status === "complete" && isInjectable(tab)) {
         messageTab(tabId, { action: "pomodoroSleep", sleepEnd: sleepEnd });
     }
+});
+
+// Initialize XP on startup if missing
+chrome.runtime.onStartup.addListener(() => {
+    chrome.storage.local.get(["xp", "belt"], (data) => {
+        if (data.xp === undefined) {
+            chrome.storage.local.set({ xp: 0 }, () => {
+                console.log("XP initialized to 0");
+            });
+        }
+        if (data.belt === undefined) {
+            chrome.storage.local.set({ belt: "White Belt" }, () => {
+                console.log("Belt initialized to White Belt");
+            });
+        }
+    });
+});
+
+//TODO remove duplication with onStartup listener
+// Initialize XP on fresh install if missing
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.local.get(["xp"], (data) => {
+        if (data.xp === undefined) {
+            chrome.storage.local.set({ xp: 0 }, () => {
+                console.log("XP initialized to 0");
+            });
+        }
+
+        let currentXp = data.xp || 0;
+        let belt = calculateBelt(currentXp);
+        chrome.storage.local.set({ belt: belt }, () => {
+            console.log(`Belt initialized to ${belt}`);
+        });
+    });
 });

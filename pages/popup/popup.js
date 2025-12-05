@@ -1,3 +1,23 @@
+const beltNames = [
+    "White Belt",
+    "Yellow Belt",
+    "Orange Belt",
+    "Green Belt",
+    "Blue Belt",
+    "Brown Belt",
+    "Black Belt"
+];
+
+const beltFiles = [
+    "white_belt.png",
+    "yellow_belt.png",
+    "orange_belt.png",
+    "green_belt.png",
+    "blue_belt.png",
+    "brown_belt.png",
+    "black_belt.png"
+];
+
 document.getElementById("start").addEventListener("click", () => {
 
     const awakeTime = Number(document.getElementById('awakeSlider').value);
@@ -24,8 +44,24 @@ sleepSlider.addEventListener('input', () => {
     sleepValue.textContent = sleepSlider.value;
 });
 
-chrome.storage.local.get(["awakeDuration", "sleepDuration"], (data) => {
-    console.log(data);
+function getBeltImagePath(belt) {
+    return "../../cats/" + (beltFiles[belt] || "white_belt.png");
+}
+
+chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt"], (data) => {
+    if (data.xp) {
+        document.getElementById("xpValue").textContent = data.xp;
+    }
+    else {
+        document.getElementById("xpValue").textContent = "0";
+    }
+    if (data.belt) {
+        document.getElementById("levelValue").textContent = beltNames[data.belt];
+        document.getElementById("catImage").src = getBeltImagePath(data.belt);
+    } else {
+        document.getElementById("levelValue").textContent = "White Belt";
+        document.getElementById("catImage").src = getBeltImagePath("White Belt");
+    }
     if (data.awakeDuration) {
         document.getElementById("awakeSlider").value = data.awakeDuration;
         document.getElementById("awakeValue").textContent = data.awakeDuration;
