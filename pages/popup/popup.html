@@ -1,23 +1,64 @@
-<html>
-    <body>
-        <h1>PawModoro</h1>
-        <p>Welcome to PawModoro!</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawModoro</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>PawModoro</h1>
+            <p class="subtitle">Earn XP by completing cycles. Avoid penalties by not snoozing or skipping rest times!</p>
+        </div>
 
-        <p>Earn XP by completing cycles. Avoid penalties by not snoozing or skipping sleep.</p>
+        <!-- Cat with Belt -->
+        <div class="cat-section">
+            <div class="cat-image-wrapper">
+                <img id="catImage" src="../../media/cats/white_belt.png" alt="Belt Cat">
+            </div>
+        </div>
 
-        <img id="catImage" src="../../cats/white_belt.png" alt="Belt Cat" style="width: 100px; height: auto;">
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">XP</div>
+                <div class="value" id="xpValue">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Level</div>
+                <div class="value" id="levelValue">White Belt</div>
+            </div>
+        </div>
 
-        <p>Current XP: <span id="xpValue"></span></p>
-        <p>Level: <span id="levelValue"></span></p>
+        <!-- Sliders -->
+        <div class="sliders-section">
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span><span class="icon">☀️</span>Surfing Time</span>
+                    <span class="slider-value"><span id="awakeValue">30</span> min</span>
+                </div>
+                <input type="range" id="awakeSlider" min="10" max="60" value="30">
+            </div>
 
-        <label for="awakeSlider">Awake time (minutes): <span id="awakeValue">30</span></label>
-        <input type="range" id="awakeSlider" min="10" max="60" value="30">
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span><span class="icon">😴</span>Rest Time</span>
+                    <span class="slider-value"><span id="sleepValue">5</span> min</span>
+                </div>
+                <input type="range" id="sleepSlider" min="2" max="30" value="5">
+            </div>
+        </div>
 
-        <label for="sleepSlider">Sleep time (minutes): <span id="sleepValue">5</span></label>
-        <input type="range" id="sleepSlider" min="2" max="30" value="5">
+        <!-- Buttons -->
+        <div class="buttons">
+            <button id="start">▶ Start</button>
+            <button id="stop" style="display: none;">■ Stop</button>
+        </div>
+    </div>
 
-        <button id="start">Start</button>
-        <button id="stop">Stop</button>
-        <script src="popup.js"></script>
-    </body>
+    <script src="popup.js"></script>
+</body>
 </html>

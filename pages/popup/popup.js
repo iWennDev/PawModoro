@@ -28,13 +28,30 @@ document.getElementById("start").addEventListener("click", () => {
         awakeTime: awakeTime,
         sleepTime: sleepTime
     });
+
+    updateButtonState(true);
 });
 
 document.getElementById("stop").addEventListener("click", () => {
     chrome.runtime.sendMessage({
         action: "stopPomodoroCycle"
     });
+
+    updateButtonState(false);
 });
+
+function updateButtonState(isRunning) {
+    const startBtn = document.getElementById("start");
+    const stopBtn = document.getElementById("stop");
+    
+    if (isRunning) {
+        startBtn.style.display = "none";
+        stopBtn.style.display = "block";
+    } else {
+        startBtn.style.display = "block";
+        stopBtn.style.display = "none";
+    }
+}
 
 awakeSlider.addEventListener('input', () => {
     awakeValue.textContent = awakeSlider.value;
@@ -45,23 +62,16 @@ sleepSlider.addEventListener('input', () => {
 });
 
 function getBeltImagePath(belt) {
-    return "../../cats/" + (beltFiles[belt] || "white_belt.png");
+    return "../../media/cats/" + (beltFiles[belt] || "white_belt.png");
 }
 
-chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt"], (data) => {
-    if (data.xp) {
-        document.getElementById("xpValue").textContent = data.xp;
-    }
-    else {
-        document.getElementById("xpValue").textContent = "0";
-    }
-    if (data.belt) {
-        document.getElementById("levelValue").textContent = beltNames[data.belt];
-        document.getElementById("catImage").src = getBeltImagePath(data.belt);
-    } else {
-        document.getElementById("levelValue").textContent = "White Belt";
-        document.getElementById("catImage").src = getBeltImagePath("White Belt");
-    }
+chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt", "isRunning"], (data) => {
+    document.getElementById("xpValue").textContent = data.xp || "0";
+    
+    const beltIndex = data.belt || 0;
+    document.getElementById("levelValue").textContent = beltNames[beltIndex] || "White Belt";
+    document.getElementById("catImage").src = getBeltImagePath(beltIndex);
+    
     if (data.awakeDuration) {
         document.getElementById("awakeSlider").value = data.awakeDuration;
         document.getElementById("awakeValue").textContent = data.awakeDuration;
@@ -70,4 +80,6 @@ chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt"], (data
         document.getElementById("sleepSlider").value = data.sleepDuration;
         document.getElementById("sleepValue").textContent = data.sleepDuration;
     }
+
+    updateButtonState(data.isRunning || false);
 });

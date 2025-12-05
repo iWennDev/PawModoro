@@ -88,7 +88,8 @@ function startCycle(awakeTime, sleepTime) {
     
     chrome.storage.local.set({
         awakeDuration,
-        sleepDuration
+        sleepDuration,
+        isRunning: true
     });
 
     console.log(`Starting cycle with AWAKE...`);
@@ -103,6 +104,9 @@ function stopCycle() {
     isAwake = true;
     chrome.alarms.clear("pomodoroCycle");
     console.log("Cycle stopped");
+    chrome.storage.local.set({
+        isRunning: false
+    });
     broadcastToTabs({action: "pomodoroAwake"});
 }
 
@@ -221,6 +225,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // Initialize XP on startup if missing
 chrome.runtime.onStartup.addListener(() => {
+    chrome.storage.local.set({isRunning: false});
     chrome.storage.local.get(["xp", "belt"], (data) => {
         if (data.xp === undefined) {
             chrome.storage.local.set({ xp: 0 }, () => {
@@ -238,6 +243,7 @@ chrome.runtime.onStartup.addListener(() => {
 //TODO remove duplication with onStartup listener
 // Initialize XP on fresh install if missing
 chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.local.set({isRunning: false});
     chrome.storage.local.get(["xp"], (data) => {
         if (data.xp === undefined) {
             chrome.storage.local.set({ xp: 0 }, () => {
