@@ -41,7 +41,11 @@ function injectScriptEverywhere(scriptPath) {
 function startCycle(awakeTime, sleepTime) {
     awakeDuration = awakeTime;
     sleepDuration = sleepTime;
-    // TODO store these durations
+    
+    chrome.storage.local.set({
+        awakeDuration,
+        sleepDuration
+    });
 
     console.log(`Starting cycle with AWAKE...`);
     chrome.alarms.create("pomodoroCycle", {delayInMinutes: awakeDuration-(COUNTDOWN_DURATION/60)});
