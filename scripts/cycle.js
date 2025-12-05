@@ -89,7 +89,10 @@ function startCycle(awakeTime, sleepTime) {
     chrome.storage.local.set({
         awakeDuration,
         sleepDuration,
-        isRunning: true
+        isRunning: true,
+        isAwake: true,
+        phaseStart: Date.now(),
+        phaseDuration: awakeDuration - (COUNTDOWN_DURATION / 60)
     });
 
     console.log(`Starting cycle with AWAKE...`);
@@ -198,9 +201,19 @@ chrome.alarms.onAlarm.addListener(
 
             if (!isAwake) {
                 sleepEnd = Date.now() + (sleepDuration+COUNTDOWN_DURATION/60) * 60 * 1000;
+                chrome.storage.local.set({
+                    isAwake: false,
+                    phaseStart: Date.now(),
+                    phaseDuration: sleepDuration+COUNTDOWN_DURATION/60
+                });
                 broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
             }
             else {
+                chrome.storage.local.set({
+                    isAwake: true,
+                    phaseStart: Date.now(),
+                    phaseDuration: awakeDuration - (COUNTDOWN_DURATION / 60)
+                });
                 broadcastToTabs({action: "pomodoroAwake"});
                 // Award XP for completing a sleep cycle
                 updateXp(COMPLETE_BONUS);

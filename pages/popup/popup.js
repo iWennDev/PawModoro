@@ -43,14 +43,39 @@ document.getElementById("stop").addEventListener("click", () => {
 function updateButtonState(isRunning) {
     const startBtn = document.getElementById("start");
     const stopBtn = document.getElementById("stop");
+    const progressSection = document.getElementById("progressSection");
     
     if (isRunning) {
         startBtn.style.display = "none";
         stopBtn.style.display = "block";
+        progressSection.style.display = "block";
+        updateProgress();
     } else {
         startBtn.style.display = "block";
         stopBtn.style.display = "none";
+        progressSection.style.display = "none";
     }
+}
+
+function updateProgress() {
+    chrome.storage.local.get(["phaseStart", "phaseDuration", "isAwake", "isRunning"], (data) => {
+        if (!data.isRunning || !data.phaseStart || !data.phaseDuration) return;
+
+        const now = Date.now();
+        const elapsed = now - data.phaseStart;
+        const total = data.phaseDuration * 60 * 1000;
+        const remaining = Math.max(0, total - elapsed);
+        const percent = Math.min(100, (elapsed / total) * 100);
+
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+
+        document.getElementById("progressFill").style.width = percent + "%";
+        document.getElementById("progressTime").textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById("progressPhase").textContent = 
+            data.isAwake === false ? "😴 Resting" : "☀️ Surfing";
+    });
 }
 
 awakeSlider.addEventListener('input', () => {
@@ -83,3 +108,12 @@ chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt", "isRun
 
     updateButtonState(data.isRunning || false);
 });
+
+// Update progress every second
+setInterval(() => {
+    chrome.storage.local.get(["isRunning"], (data) => {
+        if (data.isRunning) {
+            updateProgress();
+        }
+    });
+}, 1000);
