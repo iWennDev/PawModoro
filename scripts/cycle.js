@@ -19,16 +19,6 @@ const levels = [
     2000 // Black Belt
 ];
 
-const beltNames = [
-    "White Belt",
-    "Yellow Belt",
-    "Orange Belt",
-    "Green Belt",
-    "Blue Belt",
-    "Brown Belt",
-    "Black Belt"
-];
-
 let isAwake = true;
 let sleepEnd = null;
 
@@ -68,10 +58,10 @@ function injectScriptEverywhere(scriptPath) {
 function calculateBelt(xp) {
     for (let i = levels.length - 1; i >= 0; i--) {
         if (xp >= levels[i]) {
-            return beltNames[i];
+            return i;
         }
     }
-    return beltNames[0];
+    return 0;
 }
 
 function updateXp(amount) {
