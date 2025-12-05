@@ -70,6 +70,14 @@ function snoozeCycle() {
     broadcastToTabs({action: "pomodoroAwake"});
 }
 
+function skipSleep() {
+    isAwake = true;
+    chrome.alarms.clear("pomodoroCycle");
+    console.log(`Skipping sleep phase, starting AWAKE for ${awakeDuration} minute(s)`);
+    chrome.alarms.create("pomodoroCycle", {delayInMinutes: awakeDuration-(COUNTDOWN_DURATION/60)});
+    broadcastToTabs({action: "pomodoroAwake"});
+}
+
 function messageTab(tabId, message) {
     chrome.tabs.sendMessage(tabId, message, (response) => {
         if (chrome.runtime.lastError) {
@@ -112,6 +120,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (isRunning) {
                 console.log("Snooze pressed");
                 snoozeCycle();
+            }
+            break;
+
+        case "skipSleepPomodoroCycle":
+            if (isRunning && !isAwake) {
+                console.log("Skipping sleep");
+                skipSleep();
             }
             break;
 

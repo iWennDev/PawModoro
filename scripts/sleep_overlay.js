@@ -127,6 +127,27 @@ function createOverlay(sleepEnd) {
     });
     overlay.appendChild(overlayCountdown);
 
+    const skipBtn = document.createElement("button");
+    skipBtn.textContent = "Skip Sleep";
+    Object.assign(skipBtn.style, {
+        marginLeft: "10px",
+        padding: "5px 10px",
+        fontSize: "20px",
+        color: "#fff",
+        cursor: "pointer"
+    });
+
+    console.log(overlay);
+    overlay.appendChild(skipBtn);
+
+    skipBtn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({action: "skipSleepPomodoroCycle"});
+
+        clearInterval(countdownInterval);
+        overlay.remove();
+        overlay = null;
+    });
+
     document.body.appendChild(overlay);
 
     document.body.style.overflow = "hidden"; // no scrolling
