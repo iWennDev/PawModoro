@@ -130,10 +130,10 @@ chrome.alarms.onAlarm.addListener(
 
         console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
         isAwake = !isAwake;
-        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? AWAKE_DURATION-(COUNTDOWN_DURATION/60) : SLEEP_DURATION+(COUNTDOWN_DURATION/60)});
+        chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? awakeDuration-(COUNTDOWN_DURATION/60) : sleepDuration+(COUNTDOWN_DURATION/60)});
 
         if (!isAwake) {
-            sleepEnd = Date.now() + (SLEEP_DURATION+COUNTDOWN_DURATION/60) * 60 * 1000;
+            sleepEnd = Date.now() + (sleepDuration+COUNTDOWN_DURATION/60) * 60 * 1000;
             broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
         }
         else {
