@@ -1,15 +1,14 @@
-// TODO : Make durations configurable
-const SLEEP_DURATION = 1; // in minutes, minimum 1 (0.5 for newer Chrome versions)
-const AWAKE_DURATION = 1; // in minutes, minimum 1 (0.5 for newer Chrome versions)
-
 const COUNTDOWN_DURATION = 10; // in seconds
 
-const SNOOZE_DURATION = 1; // in minutes
+const SNOOZE_DURATION = 1; // in minutes TODO put 5 minutes, for testing purposes set to 1
 
 let isAwake = true;
 let sleepEnd = null;
 
 let isRunning = false;
+
+let awakeDuration;
+let sleepDuration;
 
 const blockedURLs = [
     /^chrome:\/\//,
@@ -39,9 +38,17 @@ function injectScriptEverywhere(scriptPath) {
     });
 }
 
-function startCycle() {
+function startCycle(awakeTime, sleepTime) {
+    awakeDuration = awakeTime;
+    sleepDuration = sleepTime;
+    
+    chrome.storage.local.set({
+        awakeDuration,
+        sleepDuration
+    });
+
     console.log(`Starting cycle with AWAKE...`);
-    chrome.alarms.create("pomodoroCycle", {delayInMinutes: AWAKE_DURATION-(COUNTDOWN_DURATION/60)});
+    chrome.alarms.create("pomodoroCycle", {delayInMinutes: awakeDuration-(COUNTDOWN_DURATION/60)});
 
     injectScriptEverywhere("scripts/sleep_overlay.js");
 
@@ -87,7 +94,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (!isRunning) {
                 isRunning = true;
                 console.log("Cycle starting");
-                startCycle();
+                // TODO restore real values, 1, 1 are for testing
+                //startCycle(Number(msg.awakeTime), Number(msg.sleepTime));
+                startCycle(1, 1);
             }
             break;
 
