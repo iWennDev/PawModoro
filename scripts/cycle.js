@@ -204,6 +204,11 @@ chrome.alarms.onAlarm.addListener(
         if (alarm.name === "pomodoroCycle") {
             console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
             isAwake = !isAwake;
+            
+            // HOTFIX for missing durations
+            if (!awakeDuration) awakeDuration = 10;
+            if (!sleepDuration) sleepDuration = 2;
+            
             chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? awakeDuration-(COUNTDOWN_DURATION/60) : sleepDuration+(COUNTDOWN_DURATION/60)});
 
             if (!isAwake) {
