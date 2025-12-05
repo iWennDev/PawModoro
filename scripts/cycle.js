@@ -124,6 +124,11 @@ function snoozeCycle() {
     chrome.alarms.clear("pomodoroCycle");
     console.log(`Snoozing for ${SNOOZE_DURATION} minute(s)`);
     chrome.alarms.create("pomodoroCycle", {delayInMinutes: SNOOZE_DURATION});
+    chrome.storage.local.set({
+        isAwake: true,
+        phaseStart: Date.now(),
+        phaseDuration: SNOOZE_DURATION
+    });
     broadcastToTabs({action: "pomodoroAwake"});
     // Apply penalty for snoozing
     updateXp(-SNOOZE_PENALTY);
@@ -160,42 +165,51 @@ function broadcastToTabs(message) {
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    switch (msg.action) {
-        case "startPomodoroCycle":
-            if (!isRunning) {
-                isRunning = true;
-                console.log("Cycle starting");
-                startCycle(Number(msg.awakeTime), Number(msg.sleepTime));
-            }
-            break;
+    // Read state from storage in case service worker restarted
+    chrome.storage.local.get(["isRunning", "isAwake", "awakeDuration", "sleepDuration"], (data) => {
+        isRunning = data.isRunning ?? false;
+        isAwake = data.isAwake !== false;
+        awakeDuration = data.awakeDuration ?? awakeDuration;
+        sleepDuration = data.sleepDuration ?? sleepDuration;
 
-        case "stopPomodoroCycle":
-            if (isRunning) {
-                isRunning = false;
-                console.log("Stopping cycle");
-                stopCycle();
-            }
-            break;
+        switch (msg.action) {
+            case "startPomodoroCycle":
+                if (!isRunning) {
+                    isRunning = true;
+                    console.log("Cycle starting");
+                    startCycle(Number(msg.awakeTime), Number(msg.sleepTime));
+                }
+                break;
 
-        case "snoozePomodoroCycle":
-            if (isRunning) {
-                console.log("Snooze pressed");
-                snoozeCycle();
-            }
-            break;
+            case "stopPomodoroCycle":
+                if (isRunning) {
+                    isRunning = false;
+                    console.log("Stopping cycle");
+                    stopCycle();
+                }
+                break;
 
-        case "skipSleepPomodoroCycle":
-            if (isRunning && !isAwake) {
-                console.log("Skipping sleep");
-                skipSleep();
-            }
-            break;
+            case "snoozePomodoroCycle":
+                if (isRunning) {
+                    console.log("Snooze pressed");
+                    snoozeCycle();
+                }
+                break;
 
-        default:
-            console.warn("Unknown action:", msg.action);
-    }
+            case "skipSleepPomodoroCycle":
+                if (isRunning && !isAwake) {
+                    console.log("Skipping sleep");
+                    skipSleep();
+                }
+                break;
+
+            default:
+                console.warn("Unknown action:", msg.action);
+        }
+    });
 
     sendResponse({ success: true });
+    return true;
 });
 
 // Alarm handler to switch between AWAKE and SLEEP phases
