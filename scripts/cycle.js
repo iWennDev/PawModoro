@@ -1,6 +1,6 @@
 const COUNTDOWN_DURATION = 10; // in seconds
 
-const SNOOZE_DURATION = 1; // in minutes TODO put 5 minutes, for testing purposes set to 1
+const SNOOZE_DURATION = 5; // in minutes
 
 // negative actions
 const SNOOZE_PENALTY = 2;
@@ -27,6 +27,7 @@ let isRunning = false;
 let awakeDuration;
 let sleepDuration;
 
+// Common addresses where the script can't be injected
 const blockedURLs = [
     /^chrome:\/\//,
     /^chrome-extension:\/\//,
@@ -36,6 +37,7 @@ const blockedURLs = [
     /^vivaldi:\/\//
 ];
 
+// Checks if a tab's URL allows script injection
 function isInjectable(tab) {
     return !blockedURLs.some((pattern) => pattern.test(tab.url));
 }
@@ -55,6 +57,7 @@ function injectScriptEverywhere(scriptPath) {
     });
 }
 
+// Calculates belt index based on XP
 function calculateBelt(xp) {
     for (let i = levels.length - 1; i >= 0; i--) {
         if (xp >= levels[i]) {
@@ -64,6 +67,7 @@ function calculateBelt(xp) {
     return 0;
 }
 
+// Updates XP and belt based on action
 function updateXp(amount) {
     chrome.storage.local.get(["xp", "belt"], (data) => {
         let currentXp = data.xp || 0;
@@ -82,6 +86,7 @@ function updateXp(amount) {
     });
 }
 
+// Starts the Pomodoro cycle with specified awake and sleep durations
 function startCycle(awakeTime, sleepTime) {
     awakeDuration = awakeTime;
     sleepDuration = sleepTime;
@@ -103,6 +108,7 @@ function startCycle(awakeTime, sleepTime) {
     broadcastToTabs({action: "pomodoroAwake"});
 }
 
+// Stops the Pomodoro cycle (destroys alarms and resets state)
 function stopCycle() {
     isAwake = true;
     chrome.alarms.clear("pomodoroCycle");
@@ -133,6 +139,7 @@ function skipSleep() {
     updateXp(-SKIP_PENALTY);
 }
 
+// Sends a message to a specific tab
 function messageTab(tabId, message) {
     chrome.tabs.sendMessage(tabId, message, (response) => {
         if (chrome.runtime.lastError) {
@@ -140,7 +147,7 @@ function messageTab(tabId, message) {
         }
     });
 }
-
+// Broadcasts a message to all injectable tabs
 function broadcastToTabs(message) {
     chrome.tabs.query({}, (tabs) => {
         tabs.forEach((tab) => {
@@ -151,15 +158,14 @@ function broadcastToTabs(message) {
     });
 }
 
+// Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.action) {
         case "startPomodoroCycle":
             if (!isRunning) {
                 isRunning = true;
                 console.log("Cycle starting");
-                // TODO restore real values, 1, 1 are for testing
-                //startCycle(Number(msg.awakeTime), Number(msg.sleepTime));
-                startCycle(1, 1);
+                startCycle(Number(msg.awakeTime), Number(msg.sleepTime));
             }
             break;
 
@@ -192,6 +198,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ success: true });
 });
 
+// Alarm handler to switch between AWAKE and SLEEP phases
 chrome.alarms.onAlarm.addListener(
     (alarm) => {
         if (alarm.name === "pomodoroCycle") {
@@ -236,28 +243,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-// Initialize XP on startup if missing
-chrome.runtime.onStartup.addListener(() => {
-    chrome.storage.local.set({isRunning: false});
+// Initialize XP and belt on startup or install
+function initializeStorage() {
+    chrome.storage.local.set({ isRunning: false });
     chrome.storage.local.get(["xp", "belt"], (data) => {
-        if (data.xp === undefined) {
-            chrome.storage.local.set({ xp: 0 }, () => {
-                console.log("XP initialized to 0");
-            });
-        }
-        if (data.belt === undefined) {
-            chrome.storage.local.set({ belt: "White Belt" }, () => {
-                console.log("Belt initialized to White Belt");
-            });
-        }
-    });
-});
-
-//TODO remove duplication with onStartup listener
-// Initialize XP on fresh install if missing
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({isRunning: false});
-    chrome.storage.local.get(["xp"], (data) => {
         if (data.xp === undefined) {
             chrome.storage.local.set({ xp: 0 }, () => {
                 console.log("XP initialized to 0");
@@ -266,8 +255,13 @@ chrome.runtime.onInstalled.addListener(() => {
 
         let currentXp = data.xp || 0;
         let belt = calculateBelt(currentXp);
-        chrome.storage.local.set({ belt: belt }, () => {
-            console.log(`Belt initialized to ${belt}`);
-        });
+        if (data.belt === undefined || data.belt !== belt) {
+            chrome.storage.local.set({ belt: belt }, () => {
+                console.log(`Belt initialized to ${belt}`);
+            });
+        }
     });
-});
+}
+
+chrome.runtime.onStartup.addListener(initializeStorage);
+chrome.runtime.onInstalled.addListener(initializeStorage);

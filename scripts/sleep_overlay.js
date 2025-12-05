@@ -5,6 +5,7 @@ let countdown;
 let countdownInterval;
 let sleepingCountdownInterval;
 
+// Pauses all media elements (video and audio) on the page
 function pauseAllMedia() {
     const mediaElements = document.querySelectorAll("video, audio");
     mediaElements.forEach((element) => {
@@ -16,6 +17,7 @@ function pauseAllMedia() {
     });
 }
 
+// Creates and displays the countdown timer before sleep phase
 function createCountdownTimer(durationSeconds, startTime, sleepEnd) {
 
     if (countdown) {
@@ -128,6 +130,7 @@ function createCountdownTimer(durationSeconds, startTime, sleepEnd) {
     }, COUNTDOWN_UPDATE_INTERVAL);
 }
 
+// Creates and displays the sleep overlay during sleep phase
 function createOverlay(sleepEnd) {
     if (overlay) {
         return;

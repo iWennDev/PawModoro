@@ -40,6 +40,7 @@ document.getElementById("stop").addEventListener("click", () => {
     updateButtonState(false);
 });
 
+// Updates the start/stop button visibility based on running state
 function updateButtonState(isRunning) {
     const startBtn = document.getElementById("start");
     const stopBtn = document.getElementById("stop");
@@ -57,6 +58,7 @@ function updateButtonState(isRunning) {
     }
 }
 
+// Updates the progress bar and timer display
 function updateProgress() {
     chrome.storage.local.get(["phaseStart", "phaseDuration", "isAwake", "isRunning"], (data) => {
         if (!data.isRunning || !data.phaseStart || !data.phaseDuration) return;
@@ -77,7 +79,7 @@ function updateProgress() {
             data.isAwake === false ? "😴 Resting" : "☀️ Surfing";
     });
 }
-
+// Sliders event listeners
 awakeSlider.addEventListener('input', () => {
     awakeValue.textContent = awakeSlider.value;
 });
