@@ -199,40 +199,46 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // Alarm handler to switch between AWAKE and SLEEP phases
-chrome.alarms.onAlarm.addListener(
-    (alarm) => {
-        if (alarm.name === "pomodoroCycle") {
-            console.log(`Switching to ${isAwake ? 'SLEEP' : 'AWAKE'} phase`);
-            isAwake = !isAwake;
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === "pomodoroCycle") {
+        chrome.storage.local.get(["awakeDuration", "sleepDuration", "isAwake"], (data) => {
+            const wasAwake = data.isAwake !== false;
+            isAwake = !wasAwake;
             
-            // HOTFIX for missing durations
-            if (!awakeDuration) awakeDuration = 10;
-            if (!sleepDuration) sleepDuration = 2;
-            
-            chrome.alarms.create("pomodoroCycle", {delayInMinutes: isAwake ? awakeDuration-(COUNTDOWN_DURATION/60) : sleepDuration+(COUNTDOWN_DURATION/60)});
+            awakeDuration = data.awakeDuration ?? awakeDuration;
+            sleepDuration = data.sleepDuration ?? sleepDuration;
+
+            console.log(`Switching to ${isAwake ? "AWAKE" : "SLEEP"} phase`);
+
+            chrome.alarms.create("pomodoroCycle", {
+                delayInMinutes: isAwake
+                    ? awakeDuration-(COUNTDOWN_DURATION/60)
+                    : sleepDuration+(COUNTDOWN_DURATION/60)
+            });
 
             if (!isAwake) {
-                sleepEnd = Date.now() + (sleepDuration+COUNTDOWN_DURATION/60) * 60 * 1000;
+                sleepEnd = Date.now() + (
+                    (sleepDuration+(COUNTDOWN_DURATION/60)) * 60 * 1000
+                );
                 chrome.storage.local.set({
                     isAwake: false,
                     phaseStart: Date.now(),
-                    phaseDuration: sleepDuration+COUNTDOWN_DURATION/60
-                });
-                broadcastToTabs({action: "pomodoroTimer", startTime: Date.now(), timerDuration: COUNTDOWN_DURATION, sleepEnd: sleepEnd});
-            }
-            else {
+                    phaseDuration: sleepDuration+(COUNTDOWN_DURATION/60)
+                })
+                broadcastToTabs({ action: "pomodoroTimer", startTime: Date.now(),
+                    timerDuration: COUNTDOWN_DURATION, sleepEnd});
+            } else {
                 chrome.storage.local.set({
                     isAwake: true,
                     phaseStart: Date.now(),
-                    phaseDuration: awakeDuration - (COUNTDOWN_DURATION / 60)
-                });
-                broadcastToTabs({action: "pomodoroAwake"});
-                // Award XP for completing a sleep cycle
+                    phaseDuration: awakeDuration-(COUNTDOWN_DURATION/60)
+                })
+                broadcastToTabs({ action: "pomodoroAwake" });
                 updateXp(COMPLETE_BONUS);
             }
-        }
+        });
     }
-);
+});
 
 // Hides new tabs if in sleep mode
 chrome.tabs.onCreated.addListener((tab) => {
