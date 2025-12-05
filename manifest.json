@@ -1,10 +1,35 @@
 {
     "name": "PawModoro",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "manifest_version": 3,
     "description": "A Pomodoro timer extension as part of NEVERHACK's challenge for Nuit de l'Info 2025.",
     "action": {
-        "default_popup": "pages/popup.html",
+        "default_popup": "pages/popup/popup.html",
         "default_icon": "icons/default_icon.png"
-    }
+    },
+    "background": {
+        "service_worker": "scripts/cycle.js"
+    },
+    "permissions": [
+        "alarms",
+        "tabs",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["scripts/sleep_overlay.js"],
+            "run_at": "document_end"
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["media/*", "cats/*"],
+            "matches": ["<all_urls>"]
+        }
+    ]
 }
