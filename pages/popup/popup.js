@@ -62,7 +62,7 @@ sleepSlider.addEventListener('input', () => {
 });
 
 function getBeltImagePath(belt) {
-    return "../../cats/" + (beltFiles[belt] || "white_belt.png");
+    return "../../media/cats/" + (beltFiles[belt] || "white_belt.png");
 }
 
 chrome.storage.local.get(["awakeDuration", "sleepDuration", "xp", "belt", "isRunning"], (data) => {
