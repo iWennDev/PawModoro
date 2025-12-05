@@ -6,6 +6,8 @@ A Manifest V3 compliant Google Chrome extension dedicated to protecting your eye
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+## Warning: In case of issues while testing the extension, a hotfix and videos are available in the dev branch. Please note that this hotfix has been done AFTER the submission deadline.
+
 ## The Problem
 
 Prolonged screen exposure is a growing health concern all around the world. Studies show that staring at screens for extended periods can lead to:
