@@ -148,10 +148,10 @@ function createOverlay(sleepEnd) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.action) {
         case "pomodoroTimer":
-            createCountdownTimer(msg.timerDuration, msg.startTime, msg.sleepEnd);
+            createCountdownTimer(Number(msg.timerDuration), Number(msg.startTime), Number(msg.sleepEnd));
             break;
         case "pomodoroSleep":
-            createOverlay(msg.sleepEnd);
+            createOverlay(Number(msg.sleepEnd));
             break;
         case "pomodoroAwake":
             if (overlay) {
